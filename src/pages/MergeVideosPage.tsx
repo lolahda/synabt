@@ -218,10 +218,16 @@ export function MergeVideosPage() {
       // 🎯 Send scenes in the EXACT order they were uploaded
       console.log('🎬 Merging scenes in uploaded order:', uploadedScenes.map(s => s.scene_number));
 
+      // ✅ الحصول على التوكن وتمريره للـ Function
+      const { data: { session } } = await supabase.auth.getSession();
+
       const { data, error } = await supabase.functions.invoke('merge-videos', {
         body: { 
           projectId: project.id,
           sceneIds: uploadedScenes.map(s => s.id) // Send scene IDs in upload order
+        },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
         },
       });
 
@@ -253,8 +259,14 @@ export function MergeVideosPage() {
     if (!project) return;
 
     try {
+      // ✅ الحصول على التوكن وتمريره للـ Function
+      const { data: { session } } = await supabase.auth.getSession();
+
       const { data, error } = await supabase.functions.invoke('check-merge-status', {
         body: { projectId: project.id },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
       });
 
       if (error) {

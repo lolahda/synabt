@@ -89,11 +89,17 @@ export function CreateProjectPage() {
         .update({ status: 'analyzing' })
         .eq('id', project.id);
 
+      // ✅ الحصول على التوكن وتمريره للـ Function
+      const { data: { session } } = await supabase.auth.getSession();
+
       const { data, error } = await supabase.functions.invoke('analyze-script', {
         body: {
           projectId: project.id,
           script: script.trim(),
           characterImage: imageUrl,
+        },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
         },
       });
 
