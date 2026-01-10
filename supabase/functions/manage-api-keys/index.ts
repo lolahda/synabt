@@ -14,33 +14,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Missing Authorization header' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // ✅ استخدام ANON_KEY للتحقق من JWT (الصحيح للـ Auth Tokens)
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? ''
-    );
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(token);
-    
-    if (userError || !user) {
-      console.error('JWT verification failed:', userError?.message);
-      return new Response(JSON.stringify({ error: 'Invalid or expired token' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    console.log('✅ User authenticated:', user.email);
-
     const { action, service, apiKey, keyId }: ManageApiKeyRequest = await req.json();
 
     // ✅ استخدام SERVICE_ROLE_KEY للوصول إلى admin_users
