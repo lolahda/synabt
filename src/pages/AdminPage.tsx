@@ -70,8 +70,14 @@ export function AdminPage() {
 
   const loadApiKeys = async () => {
     try {
+      // ✅ الحصول على التوكن وتمريره للـ Function
+      const { data: { session } } = await supabase.auth.getSession();
+      
       const { data, error } = await supabase.functions.invoke('manage-api-keys', {
         body: { action: 'list' },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
+        },
       });
 
       if (error) {
@@ -104,11 +110,17 @@ export function AdminPage() {
 
     setAdding(true);
     try {
+      // ✅ الحصول على التوكن وتمريره للـ Function
+      const { data: { session } } = await supabase.auth.getSession();
+
       const { data, error } = await supabase.functions.invoke('manage-api-keys', {
         body: {
           action: 'add',
           service: newKey.service,
           apiKey: newKey.key,
+        },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
         },
       });
 
@@ -139,10 +151,16 @@ export function AdminPage() {
 
   const handleToggleKey = async (keyId: string, currentStatus: boolean) => {
     try {
+      // ✅ الحصول على التوكن وتمريره للـ Function
+      const { data: { session } } = await supabase.auth.getSession();
+
       const { error } = await supabase.functions.invoke('manage-api-keys', {
         body: {
           action: 'toggle',
           keyId,
+        },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
         },
       });
 
@@ -159,10 +177,16 @@ export function AdminPage() {
     if (!confirm('هل أنت متأكد من حذف هذا المفتاح؟')) return;
 
     try {
+      // ✅ الحصول على التوكن وتمريره للـ Function
+      const { data: { session } } = await supabase.auth.getSession();
+
       const { error } = await supabase.functions.invoke('manage-api-keys', {
         body: {
           action: 'delete',
           keyId,
+        },
+        headers: {
+          Authorization: `Bearer ${session?.access_token}`,
         },
       });
 
