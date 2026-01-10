@@ -90,6 +90,11 @@ export function AdminPage() {
       return;
     }
 
+    if (!isAdmin) {
+      toast.error('غير مصرح لك بإضافة مفاتيح');
+      return;
+    }
+
     setAdding(true);
     try {
       // ✅ إضافة API Key مباشرة إلى الجدول
@@ -108,7 +113,8 @@ export function AdminPage() {
       setNewKey({ service: '', key: '' });
       loadApiKeys();
     } catch (error: any) {
-      toast.error(error.message);
+      console.error('Add API Key Error:', error);
+      toast.error(error.message || 'فشل إضافة المفتاح');
     } finally {
       setAdding(false);
     }

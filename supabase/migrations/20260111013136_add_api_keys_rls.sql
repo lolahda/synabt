@@ -6,8 +6,8 @@ CREATE POLICY "Admins can view api_keys"
   ON api_keys
   FOR SELECT
   USING (
-    auth.uid() IN (
-      SELECT user_id FROM admin_users WHERE user_id IS NOT NULL
+    auth.jwt() ->> 'email' IN (
+      SELECT email FROM admin_users
     )
   );
 
@@ -16,8 +16,8 @@ CREATE POLICY "Admins can insert api_keys"
   ON api_keys
   FOR INSERT
   WITH CHECK (
-    auth.uid() IN (
-      SELECT user_id FROM admin_users WHERE user_id IS NOT NULL
+    auth.jwt() ->> 'email' IN (
+      SELECT email FROM admin_users
     )
   );
 
@@ -26,8 +26,8 @@ CREATE POLICY "Admins can update api_keys"
   ON api_keys
   FOR UPDATE
   USING (
-    auth.uid() IN (
-      SELECT user_id FROM admin_users WHERE user_id IS NOT NULL
+    auth.jwt() ->> 'email' IN (
+      SELECT email FROM admin_users
     )
   );
 
@@ -36,7 +36,7 @@ CREATE POLICY "Admins can delete api_keys"
   ON api_keys
   FOR DELETE
   USING (
-    auth.uid() IN (
-      SELECT user_id FROM admin_users WHERE user_id IS NOT NULL
+    auth.jwt() ->> 'email' IN (
+      SELECT email FROM admin_users
     )
   );
