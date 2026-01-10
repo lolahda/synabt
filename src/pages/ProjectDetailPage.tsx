@@ -97,9 +97,6 @@ export function ProjectDetailPage() {
       let successCount = 0;
       let failCount = 0;
 
-      // ✅ الحصول على التوكن مرة واحدة
-      const { data: { session } } = await supabase.auth.getSession();
-
       for (const scene of scenes) {
         if (scene.status === 'pending') {
           const { data, error } = await supabase.functions.invoke('generate-scene', {
@@ -108,9 +105,6 @@ export function ProjectDetailPage() {
               prompt: `${scene.character_prompt}. ${scene.text_content}`,
               characterImage: characterImage,
               aspectRatio: project.aspect_ratio || '16:9',
-            },
-            headers: {
-              Authorization: `Bearer ${session?.access_token}`,
             },
           });
 
@@ -154,8 +148,6 @@ export function ProjectDetailPage() {
     const MAX_RETRIES = 3;
 
     const pollInterval = setInterval(async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
       const { data: currentScenes } = await supabase
         .from('scenes')
         .select('*')
@@ -168,9 +160,6 @@ export function ProjectDetailPage() {
         if (scene.status === 'generating' && scene.sora_prediction_id) {
           await supabase.functions.invoke('check-scene-status', {
             body: { sceneId: scene.id },
-            headers: {
-              Authorization: `Bearer ${session?.access_token}`,
-            },
           });
         }
       }
@@ -196,17 +185,12 @@ export function ProjectDetailPage() {
             })
             .eq('id', scene.id);
 
-          const { data: { session } } = await supabase.auth.getSession();
-
           const { error: retryError } = await supabase.functions.invoke('generate-scene', {
             body: {
               sceneId: scene.id,
               prompt: `${scene.character_prompt}. ${scene.text_content}`,
               characterImage: characterImage,
               aspectRatio: project!.aspect_ratio || '16:9',
-            },
-            headers: {
-              Authorization: `Bearer ${session?.access_token}`,
             },
           });
 
