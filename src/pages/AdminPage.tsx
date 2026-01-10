@@ -70,32 +70,14 @@ export function AdminPage() {
 
   const loadApiKeys = async () => {
     try {
-      // ✅ الحصول على التوكن وتمريره للـ Function
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const { data, error } = await supabase.functions.invoke('manage-api-keys', {
-        body: { action: 'list' },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-      });
+      // ✅ قراءة API Keys مباشرة من الجدول
+      const { data, error } = await supabase
+        .from('api_keys')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-      if (error) {
-        let errorMessage = error.message;
-        if (error instanceof FunctionsHttpError) {
-          try {
-            const statusCode = error.context?.status ?? 500;
-            const textContent = await error.context?.text();
-            const parsedError = textContent ? JSON.parse(textContent) : null;
-            errorMessage = parsedError?.error || textContent || error.message;
-            console.error(`[${statusCode}] Load API Keys Error:`, errorMessage);
-          } catch {
-            errorMessage = error.message;
-          }
-        }
-        throw new Error(errorMessage);
-      }
-      setApiKeys(data?.data || []);
+      if (error) throw error;
+      setApiKeys(data || []);
     } catch (error: any) {
       toast.error(error.message || 'فشل تحميل المفاتيح');
       console.error('Load API Keys Error:', error);
@@ -110,34 +92,17 @@ export function AdminPage() {
 
     setAdding(true);
     try {
-      // ✅ الحصول على التوكن وتمريره للـ Function
-      const { data: { session } } = await supabase.auth.getSession();
+      // ✅ إضافة API Key مباشرة إلى الجدول
+      const { data, error } = await supabase
+        .from('api_keys')
+        .insert({
+          service_name: newKey.service.toLowerCase(),
+          api_key: newKey.key,
+          is_active: true,
+        })
+        .select();
 
-      const { data, error } = await supabase.functions.invoke('manage-api-keys', {
-        body: {
-          action: 'add',
-          service: newKey.service,
-          apiKey: newKey.key,
-        },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-      });
-
-      if (error) {
-        let errorMessage = error.message;
-        if (error instanceof FunctionsHttpError) {
-          try {
-            const statusCode = error.context?.status ?? 500;
-            const textContent = await error.context?.text();
-            const parsedError = textContent ? JSON.parse(textContent) : null;
-            errorMessage = parsedError?.error || textContent || error.message;
-          } catch {
-            errorMessage = error.message;
-          }
-        }
-        throw new Error(errorMessage);
-      }
+      if (error) throw error;
 
       toast.success('تم إضافة المفتاح بنجاح');
       setNewKey({ service: '', key: '' });
@@ -151,18 +116,11 @@ export function AdminPage() {
 
   const handleToggleKey = async (keyId: string, currentStatus: boolean) => {
     try {
-      // ✅ الحصول على التوكن وتمريره للـ Function
-      const { data: { session } } = await supabase.auth.getSession();
-
-      const { error } = await supabase.functions.invoke('manage-api-keys', {
-        body: {
-          action: 'toggle',
-          keyId,
-        },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-      });
+      // ✅ تحديث API Key مباشرة في الجدول
+      const { error } = await supabase
+        .from('api_keys')
+        .update({ is_active: !currentStatus })
+        .eq('id', keyId);
 
       if (error) throw error;
 
@@ -177,22 +135,15 @@ export function AdminPage() {
     if (!confirm('هل أنت متأكد من حذف هذا المفتاح؟')) return;
 
     try {
-      // ✅ الحصول على التوكن وتمريره للـ Function
-      const { data: { session } } = await supabase.auth.getSession();
-
-      const { error } = await supabase.functions.invoke('manage-api-keys', {
-        body: {
-          action: 'delete',
-          keyId,
-        },
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`,
-        },
-      });
+      // ✅ حذف API Key مباشرة من الجدول
+      const { error } = await supabase
+        .from('api_keys')
+        .delete()
+        .eq('id', keyId);
 
       if (error) throw error;
 
-      toast.success('تم حذف المفتاح');
+      toast.success('تم حذف المفتاح بنجاح');
       loadApiKeys();
     } catch (error: any) {
       toast.error(error.message);
