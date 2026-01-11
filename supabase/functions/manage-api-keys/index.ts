@@ -14,15 +14,51 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { action, service, apiKey, keyId }: ManageApiKeyRequest = await req.json();
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing Authorization header' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    // ✅ استخدام SERVICE_ROLE_KEY للوصول إلى admin_users
+    // ✅ استخدام SERVICE_ROLE_KEY للتحقق من JWT
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Note: Admin check removed - ensure API Keys are only created through secure admin panel
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    
+    if (userError || !user) {
+      console.error('JWT verification failed:', userError?.message);
+      return new Response(JSON.stringify({ error: 'Invalid or expired token' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    console.log('✅ User authenticated:', user.email);
+
+    const { action, service, apiKey, keyId }: ManageApiKeyRequest = await req.json();
+
+    // Check if user is admin using supabaseAdmin (service role)
+    console.log('Checking admin status for email:', user.email);
+    const { data: adminCheck, error: adminError } = await supabaseAdmin
+      .from('admin_users')
+      .select('email')
+      .eq('email', user.email)
+      .maybeSingle();
+
+    console.log('Admin check result:', adminCheck, 'Error:', adminError);
+
+    if (!adminCheck) {
+      return new Response(JSON.stringify({ error: 'Admin access required. Contact administrator.' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     switch (action) {
       case 'list': {
@@ -33,7 +69,7 @@ Deno.serve(async (req) => {
 
         if (error) throw error;
 
-        return new Response(JSON.stringify({ data: data || [] }), {
+        return new Response(JSON.stringify({ data }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -58,7 +94,7 @@ Deno.serve(async (req) => {
 
         if (error) throw error;
 
-        return new Response(JSON.stringify({ data: data || null }), {
+        return new Response(JSON.stringify({ data }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -72,13 +108,13 @@ Deno.serve(async (req) => {
         }
 
         // Get current status
-        const { data: currentKey, error: getError } = await supabaseAdmin
+        const { data: currentKey } = await supabaseAdmin
           .from('api_keys')
           .select('is_active')
           .eq('id', keyId)
           .single();
 
-        if (getError || !currentKey) {
+        if (!currentKey) {
           return new Response(JSON.stringify({ error: 'Key not found' }), {
             status: 404,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -94,7 +130,7 @@ Deno.serve(async (req) => {
 
         if (error) throw error;
 
-        return new Response(JSON.stringify({ data: data || null }), {
+        return new Response(JSON.stringify({ data }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -127,8 +163,7 @@ Deno.serve(async (req) => {
     }
   } catch (error) {
     console.error('Error in manage-api-keys:', error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
