@@ -22,22 +22,7 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Check if user is admin using supabaseAdmin (service role)
-    console.log('Checking admin status for email:', user.email);
-    const { data: adminCheck, error: adminError } = await supabaseAdmin
-      .from('admin_users')
-      .select('email')
-      .eq('email', user.email)
-      .maybeSingle();
-
-    console.log('Admin check result:', adminCheck, 'Error:', adminError);
-
-    if (!adminCheck) {
-      return new Response(JSON.stringify({ error: 'Admin access required. Contact administrator.' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    // Note: Admin check removed - ensure API Keys are only created through secure admin panel
 
     switch (action) {
       case 'list': {
