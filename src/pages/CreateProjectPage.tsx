@@ -89,7 +89,6 @@ export function CreateProjectPage() {
         .update({ status: 'analyzing' })
         .eq('id', project.id);
 
-      // ✅ الحصول على التوكن وتمريره للـ Function
       const { data, error } = await supabase.functions.invoke('analyze-script', {
         body: {
           projectId: project.id,
