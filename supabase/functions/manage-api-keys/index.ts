@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
 
         if (error) throw error;
 
-        return new Response(JSON.stringify({ data }), {
+        return new Response(JSON.stringify({ data: data || [] }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -58,7 +58,7 @@ Deno.serve(async (req) => {
 
         if (error) throw error;
 
-        return new Response(JSON.stringify({ data }), {
+        return new Response(JSON.stringify({ data: data || null }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -72,13 +72,13 @@ Deno.serve(async (req) => {
         }
 
         // Get current status
-        const { data: currentKey } = await supabaseAdmin
+        const { data: currentKey, error: getError } = await supabaseAdmin
           .from('api_keys')
           .select('is_active')
           .eq('id', keyId)
           .single();
 
-        if (!currentKey) {
+        if (getError || !currentKey) {
           return new Response(JSON.stringify({ error: 'Key not found' }), {
             status: 404,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
 
         if (error) throw error;
 
-        return new Response(JSON.stringify({ data }), {
+        return new Response(JSON.stringify({ data: data || null }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
